@@ -13,7 +13,7 @@ app.get('/',function(req,res){
   res.sendFile(__dirname + '/public/index.html')
 });
 
-app.post('/postmethod',urlencodedParser, async function(req,res){
+app.post('/Graph-Visual',urlencodedParser, async function(req,res){
   Connect();
   var PersonName = req.body.name.trim();
   var noIc = req.body.noic.trim();
@@ -44,7 +44,7 @@ async function query(PersonName,noIc,NoPhone){
 return new Promise(function (resolve, reject) {
   var db = server.use('HumanRelations');
 var result;
-  var hitters = db.query("select name, out('SiblingNode').name AS Siblings, out('SiblingNode').phoneNo AS SPhoneNo,out('SiblingNode').identityNo AS SIC,"+
+  var hitters = db.query("select name,identityNo,phoneNo , out('SiblingNode').name AS Siblings, out('SiblingNode').phoneNo AS SPhoneNo,out('SiblingNode').identityNo AS SIC,"+
               "  in('ParentNode').name As Parents, in('ParentNode').phoneNo As PPhoneNo,in('ParentNode').identityNo As PIC,"+
               " out('neighbourNode').name AS Neighbour, out('neighbourNode').phoneNo AS NPhoneNo,out('neighbourNode').identityNo AS NIC"+
               " from Person where name = :name and phoneNo = :phoneNo and identityNo = :identityNo", {params: {  name: PersonName , phoneNo : NoPhone , identityNo : noIc }})

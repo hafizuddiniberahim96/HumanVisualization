@@ -50,6 +50,8 @@
 <script src="plugins/sigma.renderers.edgeLabels/sigma.canvas.edges.labels.def.js"></script>
 <script src="plugins/sigma.renderers.edgeLabels/sigma.canvas.edges.labels.curve.js"></script>
 <script src="plugins/sigma.renderers.edgeLabels/sigma.canvas.edges.labels.curvedArrow.js"></script>
+<script src="plugins/sigma.plugins.tooltips/sigma.plugins.tooltips.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/mustache.js/0.8.1/mustache.min.js"></script>
 <div id="container">
   <style>
     #graph-container {
@@ -59,27 +61,55 @@
       right: 0;
       position: absolute;
     }
+    .sigma-tooltip {
+      max-width: 240px;
+      max-height: 280px;
+      background-color: rgb(249, 247, 237,0.8);
+      box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      border-radius: 6px;
+    }
+
+    .sigma-tooltip-header {
+      font-variant: small-caps;
+      font-size: 120%;
+      color: #437356;
+      border-bottom: 1px solid #aac789;
+      padding: 10px;
+    }
+
+    .sigma-tooltip-body {
+      padding: 10px;
+    }
+
+    .sigma-tooltip-body th {
+      color: #999;
+      text-align: left;
+    }
+    .sigma-tooltip.right {
+      margin-left: 12px;
+    }
+    .sigma-tooltip.right > .arrow {
+      top: 50%;
+      left: -10px;
+      margin-top: -10px;
+      border-right-color: rgb(249, 247, 237);
+      border-left-width: 0;
+    }
+
   </style>
   <div id="graph-container"></div>
 </div>
 <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
 <script>
 
-    var i,
-      s,
-      N = 10,
-      E = 50,
-      g = {
-        nodes: [],
-        edges: []
-      };
+
 
   /**
    * This example shows the available edge label renderers for the canvas
    * renderer.
    */
    $.get( '/searching', function(data) {
-     var name=[],relation=[];
+     var name=[],PhoneNo=[],IcNo=[],relation=[];
      var count= Object.keys(data).length;
 
      if (count > 0){
@@ -93,21 +123,49 @@
            edges: []
          };
         // owner
-         name.push(data.name);relation.push("self");
+         name.push(data.name);
+         IcNo.push(data.identityNo);
+         PhoneNo.push(data.phoneNo);
+         relation.push("self");
          //siblings
-         for (i = 0; i < data.Siblings.length; i++) {name.push(data.Siblings[i]); relation.push("Sibling");}
-         for (i = 0; i < data.Parents.length; i++) {name.push(data.Parents[i]);  relation.push("parents");}
-         for (i = 0; i < data.Neighbour.length; i++) {name.push(data.Neighbour[i]);relation.push("neighbour");}
+         for (i = 0; i < data.Siblings.length; i++)
+         {
+           name.push(data.Siblings[i]);
+           IcNo.push(data.SIC[i]);
+           PhoneNo.push(data.SPhoneNo[i]);
+           relation.push("Sibling");
+          }
+          //parents
+         for (i = 0; i < data.Parents.length; i++)
+         {
+           name.push(data.Parents[i]);
+           IcNo.push(data.PIC[i]);
+           PhoneNo.push(data.PPhoneNo[i]);
+           relation.push("parents");
+         }
+         //neighbour
+         for (i = 0; i < data.Neighbour.length; i++)
+         {
+           name.push(data.Neighbour[i]);
+           IcNo.push(data.NIC[i]);
+           PhoneNo.push(data.NPhoneNo[i]);
+           relation.push("neighbour");
+         }
 
          for (i = 0; i < N; i++)
            g.nodes.push({
              id: 'n' + i,
              label: name[i] ,
-             
+
              x: Math.random(),
              y: Math.random(),
              size: 50,
-             color: getRandomColor()
+             color: getRandomColor(),
+             data : {
+               name : name[i],
+               PhoneNo : PhoneNo[i],
+               NoIc : IcNo[i]
+             }
            });
 
             for (i = 0; i < E; i++){
@@ -134,7 +192,43 @@
          settings: {
            edgeLabelSize: 'proportional'
          }
-       });
+});
+// setting tooltip
+      var config = {
+      node: [{
+        show: 'clickNode',
+        hide: 'clickStage',
+        cssClass: 'sigma-tooltip',
+        position: 'right',
+        //autoadjust: true,
+        template:
+        '<div class="arrow"></div>' +
+        ' <div class="sigma-tooltip-header">{{label}}</div>' +
+        '  <div class="sigma-tooltip-body">' +
+        '    <table>' +
+        '      <tr><th>Name</th> <td>{{data.name}}</td></tr>' +
+        '      <tr><th>Phone No</th> <td>{{data.PhoneNo}}</td></tr>' +
+        '      <tr><th>Identification No</th> <td>{{data.NoIc}}</td></tr>' +
+        '    </table>' +
+        '  </div>',
+        renderer: function(node, template) {
+          // The function context is s.graph
+          node.degree = this.degree(node.id);
+
+          // Returns an HTML string:
+          return Mustache.render(template, node);
+          // Returns a DOM Element:
+          //var el = document.createElement('div');
+          //return el.innerHTML = Mustache.render(template, node);
+        }
+      }]};
+
+        sigma.plugins.tooltips(s, s.renderers[0], config);
+        //var tooltips = sigma.plugins.tooltips(s, s.renderers[0], config);
+        // tooltips.bind('shown', function(event) {
+        //   console.log('tooltip shown', event);
+        // });
+
       });
 
       function getRandomColor() {
